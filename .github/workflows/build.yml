@@ -1,0 +1,27 @@
+name: build-3dsx
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bibliotheques
+        run: dkp-pacman -Sy --noconfirm 3ds-libjpeg-turbo
+      - name: Makefile (modele officiel adapte)
+        run: |
+          cp /opt/devkitpro/examples/3ds/templates/application/Makefile Makefile
+          sed -i 's/^TARGET.*/TARGET := a7import/' Makefile
+          sed -i 's/^LIBS.*/LIBS := -ljpeg -lctru -lm/' Makefile
+          sed -i 's/^LIBDIRS.*/LIBDIRS := $(PORTLIBS) $(CTRULIB)/' Makefile
+          sed -i 's/^ROMFS[[:space:]]*:=.*/ROMFS :=/' Makefile
+          sed -i 's/^APP_TITLE.*/APP_TITLE := A7 Import/' Makefile
+          sed -i 's/^APP_DESCRIPTION.*/APP_DESCRIPTION := Visionneuse JPEG taille reelle/' Makefile
+      - name: Compilation
+        run: make LIBDIRS="/opt/devkitpro/portlibs/3ds /opt/devkitpro/libctru"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: a7import-3dsx
+          path: a7import.3dsx
